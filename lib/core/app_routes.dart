@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:sf/pages/compatibility_page.dart';
 import 'package:sf/pages/dashboard_page.dart';
 import 'package:sf/pages/home_page.dart';
-import 'package:sf/pages/pathways_page.dart';
 import 'package:sf/pages/resume_page.dart';
 import 'package:sf/pages/upskill_page.dart';
 
@@ -25,8 +24,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const CompatibilityPage());
       case upskill:
         return MaterialPageRoute(builder: (_) => const UpskillPage());
-      case pathways:
-        return MaterialPageRoute(builder: (_) => const PathwaysPage());
+      // case pathways:
+      //   return MaterialPageRoute(builder: (_) => const PathwaysPage());
       case dashboard:
         return MaterialPageRoute(builder: (_) => const DashboardPage());
 

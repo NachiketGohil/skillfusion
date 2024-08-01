@@ -1,9 +1,14 @@
+import 'dart:convert';
 import 'dart:html' as html;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:sf/api/models/course_response_model.dart';
+import 'package:sf/api/models/roles_request_model.dart';
+import 'package:sf/pages/pathways_page.dart';
 
-import '../core/app_routes.dart';
+import '../core/urls.dart';
 
 class ResumePage extends StatefulWidget {
   const ResumePage({super.key});
@@ -20,6 +25,9 @@ class ResumeItem {
 }
 
 class _ResumePageState extends State<ResumePage> {
+  TextEditingController controllerRoles = TextEditingController();
+  TextEditingController controllerDescription = TextEditingController();
+
   final List<ResumeItem> _files = [];
 
   void _pickFile() async {
@@ -119,6 +127,7 @@ class _ResumePageState extends State<ResumePage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   TextField(
+                    controller: controllerRoles,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
@@ -127,6 +136,7 @@ class _ResumePageState extends State<ResumePage> {
                     ),
                   ),
                   TextField(
+                    controller: controllerDescription,
                     maxLines: 6,
                     autocorrect: true,
                     decoration: InputDecoration(
@@ -149,12 +159,93 @@ class _ResumePageState extends State<ResumePage> {
         alignment: Alignment.center,
         child: ElevatedButton(
           onPressed: () {
-            Navigator.of(context).pushNamed(AppRoutes.pathways);
-            print("Navigating to Pathways");
+            _uploadFiles();
           },
           child: const Text("Submit"),
         ),
       ),
     );
   }
+
+  Future<void> _uploadFiles() async {
+    var uri = Uri.parse(Urls.uploadResume);
+    var request = http.MultipartRequest('POST', uri);
+
+    for (var file in _files) {
+      if (file.bytes != null) {
+        var multipartFile = http.MultipartFile.fromBytes(
+          'files',
+          file.bytes!,
+          filename: file.name,
+        );
+        request.files.add(multipartFile);
+      }
+    }
+
+    var response = await request.send();
+    if (response.statusCode == 200) {
+      print('Files uploaded successfully');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Files uploaded successfully'),
+        ),
+      );
+      submitRoles();
+    } else {
+      print('File upload failed');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('File upload failed'),
+        ),
+      );
+    }
+  }
+
+  Future<void> submitRoles() async {
+    RolesRequestModel model = RolesRequestModel();
+    model.role = controllerRoles.text;
+    model.description = controllerDescription.text;
+
+    ///
+    var uri = Uri.parse(Urls.rolesCourse);
+    var response = await http.post(
+      uri,
+      body: model,
+    );
+
+    if (response.statusCode == 200) {
+      /// Fill the course object
+      courseResponseModel =
+          CourseResponseModel.fromJson(jsonDecode(response.body)['result']);
+
+      /// Success snackbar
+      print('Roles got successfully');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Roles got successfully'),
+        ),
+      );
+
+      /// Navigate
+      print("Navigating to Pathways");
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PathwaysPage(
+            courseResponseModel: courseResponseModel,
+          ),
+        ),
+      );
+    } else {
+      /// Failed snackbar
+      print('Roles Failed');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Roles Failed'),
+        ),
+      );
+    }
+  }
 }
+
+CourseResponseModel courseResponseModel = CourseResponseModel();
